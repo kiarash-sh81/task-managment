@@ -35,3 +35,5 @@ Route.get('task' , 'TasksController.getMyTask')
 Route.get('task/:taskID' , 'TasksController.getTasksById')
 
 Route.delete('task/:taskID' , 'TasksController.deleteTaskByID')
+
+Route.post('task/upload' , 'TasksController.fileUpload')

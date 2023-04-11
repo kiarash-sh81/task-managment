@@ -1,3 +1,5 @@
+import Application from '@ioc:Adonis/Core/Application'
+import * as path from 'path'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Database from '@ioc:Adonis/Lucid/Database'
 import Task from 'App/Models/Task'
@@ -15,6 +17,16 @@ export default class TasksController {
     const priority = request.input('priority')
     const userID = await (await auth.authenticate()).$attributes.id
     const task = new Task()
+    if(request?.file){
+      const coverImage = request.file('image')
+      const fileName = new Date().getTime()+'.'+coverImage?.extname
+      await coverImage?.move(Application.tmpPath('uploads'),{
+        name: fileName,
+      })
+
+      const image = path.join(`${request.protocol()}://${request.hostname()}:${process.env.PORT}/uploads/${fileName}`)
+      task.image = image
+    }
     task.name = name
     task.priority = priority
     task.user_id = userID
@@ -93,7 +105,7 @@ export default class TasksController {
       },
     })
   }
-  public async updateTask({request , response , auth , params}:HttpContextContract){
+  public async updateTask ({request , response , auth , params}:HttpContextContract){
     const auhtentication = await auth.check()
     if(!auhtentication){
       return response.status(401).json({
@@ -102,6 +114,18 @@ export default class TasksController {
       })
     }
     const {taskID} = params
-    const userID = await (await auth.authenticate()).$attributes.id  
+    const userID = await (await auth.authenticate()).$attributes.id
   }
+
+  // public async fileUpload ({request , response , auth , params}:HttpContextContract){
+  //   if(request?.file){
+  //     const coverImage = request.file('image')
+  //     const fileName = request.file('image')?.clientName;
+  //     await coverImage?.move(Application.tmpPath('uploads'),{
+  //       name: new Date().getTime()+'.'+coverImage.extname,
+  //     })
+
+  //     const image = path.join(`${request.protocol()}://${request.hostname()}:${process.env.PORT}/uploads/${fileName}`)
+  //   }
+  // }
 }

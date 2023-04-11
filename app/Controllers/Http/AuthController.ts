@@ -1,4 +1,5 @@
-
+import Application from '@ioc:Adonis/Core/Application'
+import * as path from 'path'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import User from 'App/Models/User'
 export default class AuthController {
@@ -7,6 +8,16 @@ export default class AuthController {
     const password = request.input('password')
 
     const user = new User()
+    if(request?.file){
+      const coverImage = request.file('image')
+      const fileName = new Date().getTime()+'.'+coverImage?.extname
+      await coverImage?.move(Application.tmpPath('uploads'),{
+        name: fileName,
+      })
+
+      const image = path.join(`${request.protocol()}://${request.hostname()}:${process.env.PORT}/uploads/${fileName}`)
+      user.image = image
+    }
     user.email = email
     user.password = password
     await user.save()

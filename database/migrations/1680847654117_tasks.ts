@@ -8,6 +8,7 @@ export default class extends BaseSchema {
       table.increments('id')
       table.string('name')
       table.string('priority')
+      table.string('image')
       table.integer('user_id').unsigned()
       table.foreign('user_id').references('users.id')
       // table.integer('user_id').unsigned()
