@@ -43,6 +43,39 @@ import {PriorityEnum} from '../../enum/priority.enum'
  *        200:
  *          description: successfull  
  */
+
+/**
+ * @swagger
+ *  /task/{taskID}:
+ *    patch:
+ *      tags: [task-controller]
+ *      parameters:
+ *        - in: path
+ *          name: taskID
+ *          type: string
+ *          required: true 
+ *      requestBody:
+ *        required: true
+ *        content:
+ *          multipart/form-data:
+ *            description: user add task
+ *            schema:
+ *              type: object
+ *              properties:
+ *                name:
+ *                  type: string
+ *                  description: name of task
+ *                priority:
+ *                  type: string
+ *                  description: the priorities of task [high , medium , low]
+ *                image:
+ *                  type: file
+ *                  description: task image
+ *      responses:
+ *        200:
+ *          description: successfull  
+ */
+
 /**
  * @swagger
  *  /task:
@@ -87,7 +120,8 @@ import {PriorityEnum} from '../../enum/priority.enum'
 export default class TasksController {
   public async createTask ({request , response , auth}:HttpContextContract){
     try {
-      const auhtentication = await auth.check()
+      const auhtentication = await auth.use('jwt').check()
+      console.log(auhtentication)
       if(!auhtentication){
         return response.status(401).json({
           statusCode: 401,
@@ -102,7 +136,7 @@ export default class TasksController {
       const payload = await request.validate({schema: validateSchema , messages:{'priority.enum' : 'priority : [high , medium , low]'}})
       const name = request.input('name')
       const priority = request.input('priority')
-      const userID = await (await auth.authenticate()).$attributes.id
+      const userID = await (await auth.use('jwt').authenticate()).id
       const task = new Task()
       if(request?.file){
         const coverImage = request.file('image')
@@ -125,7 +159,7 @@ export default class TasksController {
         },
       })
     } catch (error) {
-      return response.status(error.status).json({
+      return response.status(401).json({
         statusCode: error.status,
         error: error.message,
       })
@@ -134,14 +168,14 @@ export default class TasksController {
 
   public async getMyTask ({request , response , auth}:HttpContextContract){
     try {
-      const auhtentication = await auth.check()
+      const auhtentication = await auth.use('jwt').check()
       if(!auhtentication){
         return response.status(401).json({
           statusCode: 401,
           message: 'please login to your account',
         })
       }
-      const userID = await (await auth.authenticate()).$attributes.id
+      const userID = await (await auth.use('jwt').authenticate()).id
       let tasks = await Task.findBy('user_id' , userID)
       return response.status(200).json({
         statusCode: 200,
@@ -150,7 +184,7 @@ export default class TasksController {
         },
       })
     } catch (error) {
-      return response.status(error.status).json({
+      return response.status(401).json({
         statusCode: error.status,
         error: error.message,
       })
@@ -159,7 +193,7 @@ export default class TasksController {
 
   public async getTasksById ({request , response , auth , params}:HttpContextContract){
     try {
-      const auhtentication = await auth.check()
+      const auhtentication = await auth.use('jwt').check()
       if(!auhtentication){
         return response.status(401).json({
           statusCode: 401,
@@ -167,7 +201,7 @@ export default class TasksController {
         })
       }
       const {taskID} = params
-      const userID = await (await auth.authenticate()).$attributes.id
+      const userID = await (await auth.use('jwt').authenticate()).id
       const tasks = (await Database.rawQuery('select * from tasks where id = ? AND user_id = ?' , [taskID ,userID ]))[0]
       console.log(tasks)
       return response.status(200).json({
@@ -186,7 +220,7 @@ export default class TasksController {
 
   public async deleteTaskByID ({request , response , auth , params}:HttpContextContract){
     try {
-      const auhtentication = await auth.check()
+      const auhtentication = await auth.use('jwt').check()
       if(!auhtentication){
         return response.status(401).json({
           statusCode: 401,
@@ -194,7 +228,7 @@ export default class TasksController {
         })
       }
       const {taskID} = params
-      const userID = await (await auth.authenticate()).$attributes.id
+      const userID = await (await auth.use('jwt').authenticate()).id
       const tasks = (await Database.rawQuery('select * from tasks where id = ? AND user_id = ?' , [taskID ,userID ]))[0]
       if(!tasks){
         return response.status(404).json({
@@ -221,7 +255,7 @@ export default class TasksController {
   }
   public async updateTask ({request , response , auth , params}:HttpContextContract){
     try {
-      const auhtentication = await auth.check()
+      const auhtentication = await auth.use('jwt').check()
       if(!auhtentication){
         return response.status(401).json({
           statusCode: 401,
@@ -229,7 +263,39 @@ export default class TasksController {
         })
       }
       const {taskID} = params
-      const userID = await (await auth.authenticate()).$attributes.id
+      const userID = await (await auth.use('jwt').authenticate()).id
+      const data = request.body()
+      const blackList = ['' , ' ' , '0' , 0 , undefined , null , NaN]
+      Object.keys(data).forEach(key=>{
+        if(blackList.includes(data[key])) {
+          delete data[key]
+        }
+      })
+      if(request?.file){
+        const coverImage = request.file('image')
+        const fileName = new Date().getTime()+'.'+coverImage?.extname
+        await coverImage?.move(Application.tmpPath('uploads'),{
+          name: fileName,
+        })
+        const image = path.join(`${request.protocol()}://${request.hostname()}:${process.env.PORT}/uploads/${fileName}`)
+        data.image = image
+      }
+      const findingUserTask= await (await Task.findOrFail(taskID)).$attributes.user_id
+      if(findingUserTask !== userID){
+        return response.status(404).json({
+          statusCode: 404,
+          data:{
+            message: 'the task not founded',
+          },
+        })
+      }
+      await Task.updateOrCreate({id:taskID} ,data)
+      return response.status(200).json({
+        statusCode: 200,
+        data:{
+          message: 'task updated successfully',
+        },
+      })
     } catch (error) {
       return response.status(error.status).json({
         statusCode: error.status,

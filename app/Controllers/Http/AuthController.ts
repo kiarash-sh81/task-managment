@@ -128,7 +128,7 @@ export default class AuthController {
       const payload = await request.validate({
         schema: Newschema,messages:{'email.email' : 'the email type not correct'},
       })
-      const token = await auth.use('api').attempt(email, password, {
+      const token = await auth.use('jwt').attempt(email, password, {
         expiresIn: '10 days',
       })
 
@@ -141,7 +141,7 @@ export default class AuthController {
         },
       })
     } catch (error) {
-      return response.status(error.status).json({
+      return response.status(401).json({
         statusCode: error.status,
         error: error.message,
       })
