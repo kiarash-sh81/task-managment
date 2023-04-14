@@ -1,133 +1,15 @@
 import Application from '@ioc:Adonis/Core/Application'
 import * as path from 'path'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import Database from '@ioc:Adonis/Lucid/Database'
 import Task from 'App/Models/Task'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import {PriorityEnum} from '../../enum/priority.enum'
-
-/**
- * @swagger
- *  tags:
- *    - task-controller
- */
-/**
- * @swagger
- *  /task:
- *    post:
- *      tags: [task-controller] 
- *      requestBody:
- *        required: true
- *        content:
- *          multipart/form-data:
- *            description: user add task
- *            schema:
- *              type: object
- *              required:
- *                - name
- *                - priority
- *                - image
- *              properties:
- *                name:
- *                  type: string
- *                  required: true
- *                  description: name of task
- *                priority:
- *                  type: string
- *                  required: true
- *                  description: the priorities of task [high , medium , low]
- *                image:
- *                  type: file
- *                  description: task image
- *      responses:
- *        200:
- *          description: successfull  
- */
-
-/**
- * @swagger
- *  /task/{taskID}:
- *    patch:
- *      tags: [task-controller]
- *      parameters:
- *        - in: path
- *          name: taskID
- *          type: string
- *          required: true 
- *      requestBody:
- *        required: true
- *        content:
- *          multipart/form-data:
- *            description: user add task
- *            schema:
- *              type: object
- *              properties:
- *                name:
- *                  type: string
- *                  description: name of task
- *                priority:
- *                  type: string
- *                  description: the priorities of task [high , medium , low]
- *                image:
- *                  type: file
- *                  description: task image
- *      responses:
- *        200:
- *          description: successfull  
- */
-
-/**
- * @swagger
- *  /task:
- *    get:
- *      tags: [task-controller]
- *      summery: geting user tasks
- *      responses:
- *        200:
- *          description: successfull  
- */
-/**
- * @swagger
- *  /task/{taskID}:
- *    get:
- *      tags: [task-controller]
- *      summery: geting task by id
- *      parameters:
- *              -   in: path
- *                  name: taskID
- *                  type: string
- *                  required: true
- *      responses:
- *        200:
- *          description: successfull  
- */
-/**
- * @swagger
- *  /task/{taskID}:
- *    delete:
- *      tags: [task-controller]
- *      summery: deleting task by id
- *      parameters:
- *              -   in: path
- *                  name: taskID
- *                  type: string
- *                  required: true
- *      responses:
- *        200:
- *          description: successfull  
- */
+import { autoLogin } from 'App/utils/autoLogin'
 
 export default class TasksController {
   public async createTask ({request , response , auth}:HttpContextContract){
     try {
-      const auhtentication = await auth.use('jwt').check()
-      console.log(auhtentication)
-      if(!auhtentication){
-        return response.status(401).json({
-          statusCode: 401,
-          message: 'please login to your account',
-        })
-      }
+      await autoLogin(response , auth)
       const validateSchema = schema.create({
         name: schema.string(),
         priority: schema.enum(Object.values(PriorityEnum)),
@@ -140,6 +22,7 @@ export default class TasksController {
       const task = new Task()
       if(request?.file){
         const coverImage = request.file('image')
+        console.log(coverImage?.extname)
         const fileName = new Date().getTime()+'.'+coverImage?.extname
         await coverImage?.move(Application.tmpPath('uploads'),{
           name: fileName,
@@ -168,15 +51,9 @@ export default class TasksController {
 
   public async getMyTask ({request , response , auth}:HttpContextContract){
     try {
-      const auhtentication = await auth.use('jwt').check()
-      if(!auhtentication){
-        return response.status(401).json({
-          statusCode: 401,
-          message: 'please login to your account',
-        })
-      }
+      await autoLogin(response , auth)
       const userID = await (await auth.use('jwt').authenticate()).id
-      let tasks = await Task.findBy('user_id' , userID)
+      let tasks = await Task.query().where('user_id' , userID)
       return response.status(200).json({
         statusCode: 200,
         data:{
@@ -193,17 +70,10 @@ export default class TasksController {
 
   public async getTasksById ({request , response , auth , params}:HttpContextContract){
     try {
-      const auhtentication = await auth.use('jwt').check()
-      if(!auhtentication){
-        return response.status(401).json({
-          statusCode: 401,
-          message: 'please login to your account',
-        })
-      }
+      await autoLogin(response , auth)
       const {taskID} = params
       const userID = await (await auth.use('jwt').authenticate()).id
-      const tasks = (await Database.rawQuery('select * from tasks where id = ? AND user_id = ?' , [taskID ,userID ]))[0]
-      console.log(tasks)
+      const tasks = await Task.query().where('id' , taskID).andWhere('user_id',userID)
       return response.status(200).json({
         statusCode: 200,
         data:{
@@ -220,17 +90,11 @@ export default class TasksController {
 
   public async deleteTaskByID ({request , response , auth , params}:HttpContextContract){
     try {
-      const auhtentication = await auth.use('jwt').check()
-      if(!auhtentication){
-        return response.status(401).json({
-          statusCode: 401,
-          message: 'please login to your account',
-        })
-      }
+      await autoLogin(response , auth)
       const {taskID} = params
       const userID = await (await auth.use('jwt').authenticate()).id
-      const tasks = (await Database.rawQuery('select * from tasks where id = ? AND user_id = ?' , [taskID ,userID ]))[0]
-      if(!tasks){
+      const tasks = await Task.query().where('id' , taskID).andWhere('user_id' , userID)
+      if(tasks.length === 0){
         return response.status(404).json({
           statusCode:404,
           data:{
@@ -255,13 +119,7 @@ export default class TasksController {
   }
   public async updateTask ({request , response , auth , params}:HttpContextContract){
     try {
-      const auhtentication = await auth.use('jwt').check()
-      if(!auhtentication){
-        return response.status(401).json({
-          statusCode: 401,
-          message: 'please login to your account',
-        })
-      }
+      await autoLogin(response , auth)
       const {taskID} = params
       const userID = await (await auth.use('jwt').authenticate()).id
       const data = request.body()

@@ -3,70 +3,7 @@ import * as path from 'path'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import User from 'App/Models/User'
 import { schema , rules } from '@ioc:Adonis/Core/Validator'
-/**
- * @swagger
- *  tags:
- *    - Auth
- */
-/**
- * @swagger
- *  /register:
- *    post:
- *      tags: [Auth] 
- *      requestBody:
- *        required: true
- *        content:
- *          multipart/form-data:
- *            description: user register
- *            schema:
- *              type: object
- *              required:
- *                - email
- *                - password
- *              properties:
- *                email:
- *                  type: string
- *                  required: true
- *                  description: email of the user
- *                password:
- *                  type: string
- *                  required: true
- *                  description: the password of the user
- *                image:
- *                  type: file
- *                  description: user profile
- *      responses:
- *        200:
- *          description: successfull  
- */
-/**
- * @swagger
- *  /login:
- *    post:
- *      tags: [Auth] 
- *      requestBody:
- *        required: true
- *        content:
- *          multipart/form-data:
- *            description: user register
- *            schema:
- *              type: object
- *              required:
- *                - email
- *                - password
- *              properties:
- *                email:
- *                  type: string
- *                  required: true
- *                  description: email of the user
- *                password:
- *                  type: string
- *                  required: true
- *                  description: the password of the user
- *      responses:
- *        200:
- *          description: successfull  
- */
+
 export default class AuthController {
   public async register ({ request, response}: HttpContextContract , next) {
     try {
@@ -128,8 +65,11 @@ export default class AuthController {
       const payload = await request.validate({
         schema: Newschema,messages:{'email.email' : 'the email type not correct'},
       })
-      const token = await auth.use('jwt').attempt(email, password, {
+      const token = await auth.use('jwt').attempt(email, password,{
         expiresIn: '10 days',
+        payload:{
+          email,
+        },
       })
 
       const accessToken = (token.toJSON()).token
