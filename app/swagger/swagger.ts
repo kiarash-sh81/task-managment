@@ -3,6 +3,7 @@
  *  tags:
  *    - Auth
  *    - task-controller
+ *    - Admin
  */
 /**
  * @swagger
@@ -164,6 +165,96 @@
  *                  name: taskID
  *                  type: string
  *                  required: true
+ *      responses:
+ *        200:
+ *          description: successfull  
+ */
+/**
+ * @swagger
+ *  /admin/user:
+ *      post:
+ *          tags: [Admin]
+ *          requestBody:
+ *              required: true
+ *              content:
+ *                multipart/form-data:
+ *                  description: user create
+ *                  schema:
+ *                    type: object
+ *                    required:
+ *                      - email
+ *                      - password
+ *                    properties:
+ *                      email:
+ *                        type: string
+ *                        required: true
+ *                        description: email of the user
+ *                      password:
+ *                        type: string
+ *                        required: true
+ *                        description: the password of the user
+ *                      image:
+ *                        type: file
+ *                        description: user profile
+ *          responses:
+ *              200:
+ *                  description: successfull
+ */
+
+/**
+ * @swagger
+ *  /admin/user/{id}:
+ *    patch:
+ *      tags: [Admin]
+ *      parameters:
+ *        - in: path
+ *          name: id
+ *          type: string
+ *          required: true 
+ *      requestBody:
+ *        required: true
+ *        content:
+ *          multipart/form-data:
+ *            description: update user
+ *            schema:
+ *              type: object
+ *              properties:
+ *                email:
+ *                  type: string
+ *                  description: name of task
+ *                password:
+ *                  type: string
+ *                  description: the priorities of task [high , medium , low]
+ *                image:
+ *                  type: file
+ *                  description: task image
+ *      responses:
+ *        200:
+ *          description: successfull  
+ */
+
+/**
+ * @swagger
+ *  /admin/user/{id}:
+ *    delete:
+ *      tags: [Admin]
+ *      summery: deleting user account by id
+ *      parameters:
+ *              -   in: path
+ *                  name: id
+ *                  type: string
+ *                  required: true
+ *      responses:
+ *        200:
+ *          description: successfull  
+ */
+
+/**
+ * @swagger
+ *  /admin/user:
+ *    get:
+ *      tags: [Admin]
+ *      summery: geting users
  *      responses:
  *        200:
  *          description: successfull  

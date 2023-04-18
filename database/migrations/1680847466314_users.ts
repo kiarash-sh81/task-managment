@@ -10,6 +10,7 @@ export default class extends BaseSchema {
       table.string('password', 180).notNullable()
       table.string('image')
       table.string('remember_me_token').nullable()
+      table.string('role').defaultTo('USER')
       table.string('jwt_tokens')
 
       /**

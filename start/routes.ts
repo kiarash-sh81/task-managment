@@ -37,3 +37,11 @@ Route.get('task/:taskID' , 'TasksController.getTasksById')
 Route.delete('task/:taskID' , 'TasksController.deleteTaskByID')
 
 Route.patch('task/:taskID' , 'TasksController.updateTask')
+
+Route.post('admin/user' , 'AuthController.register').middleware(['checkAdmin'])
+
+Route.get('admin/user' , 'AdminsController.getAllUser').middleware(['checkAdmin'])
+
+Route.patch('admin/user/:id' , 'AdminsController.updateAccount').middleware(['checkAdmin'])
+
+Route.delete('admin/user/:id' , 'AdminsController.deleteAccount').middleware(['checkAdmin'])
