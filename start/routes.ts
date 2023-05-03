@@ -45,3 +45,4 @@ Route.get('admin/user' , 'AdminsController.getAllUser').middleware(['checkAdmin'
 Route.patch('admin/user/:id' , 'AdminsController.updateAccount').middleware(['checkAdmin'])
 
 Route.delete('admin/user/:id' , 'AdminsController.deleteAccount').middleware(['checkAdmin'])
+
